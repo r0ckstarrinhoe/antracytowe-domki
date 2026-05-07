@@ -74,6 +74,7 @@ export default function Admin() {
   });
 
   const [editingPrice, setEditingPrice] = React.useState<{id: string, value: number} | null>(null);
+  const [editingSpecialPriceId, setEditingSpecialPriceId] = React.useState<string | null>(null);
 
   const getPriceForHouse = (houseId: string) => {
     return houseSettings[houseId] || HOUSES.find(h => h.id === houseId)?.priceBase || 0;
@@ -351,16 +352,25 @@ export default function Admin() {
     }
   };
 
-  const handleAddSpecialPrice = async (e: React.FormEvent) => {
+  const handleSaveSpecialPrice = async (e: React.FormEvent) => {
     e.preventDefault();
-    const path = 'special_prices';
-    setIsProcessing('new-special');
+    setIsProcessing('save-special');
     try {
-      const docRef = await addDoc(collection(db, path), {
-        ...newSpecialPrice,
-        createdAt: serverTimestamp()
-      });
-      setSpecialPrices(prev => [...prev, { id: docRef.id, ...newSpecialPrice }]);
+      if (editingSpecialPriceId) {
+        const path = `special_prices/${editingSpecialPriceId}`;
+        await updateDoc(doc(db, 'special_prices', editingSpecialPriceId), {
+          ...newSpecialPrice
+        });
+        setSpecialPrices(prev => prev.map(p => p.id === editingSpecialPriceId ? { ...p, ...newSpecialPrice } as SpecialPrice : p));
+        setEditingSpecialPriceId(null);
+      } else {
+        const path = 'special_prices';
+        const docRef = await addDoc(collection(db, path), {
+          ...newSpecialPrice,
+          createdAt: serverTimestamp()
+        });
+        setSpecialPrices(prev => [...prev, { id: docRef.id, ...newSpecialPrice } as SpecialPrice]);
+      }
       setNewSpecialPrice({
         houseId: HOUSES[0].id,
         startDate: '',
@@ -370,7 +380,7 @@ export default function Admin() {
       });
     } catch (error) {
       console.error(error);
-      handleFirestoreError(error, OperationType.WRITE, path);
+      handleFirestoreError(error, editingSpecialPriceId ? OperationType.UPDATE : OperationType.WRITE, 'special_prices');
     } finally {
       setIsProcessing(null);
     }
@@ -802,9 +812,9 @@ export default function Admin() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                 {/* Form */}
                 <div className="lg:col-span-1">
-                  <form onSubmit={handleAddSpecialPrice} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-200 space-y-6">
+                  <form onSubmit={handleSaveSpecialPrice} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-200 space-y-6">
                     <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
-                      <Plus size={20} /> Dodaj nową cenę
+                      {editingSpecialPriceId ? <Edit2 size={20} /> : <Plus size={20} />} {editingSpecialPriceId ? 'Edytuj cenę' : 'Dodaj nową cenę'}
                     </h4>
                     
                     <div className="space-y-2">
@@ -874,13 +884,27 @@ export default function Admin() {
                       />
                     </div>
 
-                    <button 
-                      type="submit"
-                      disabled={isProcessing === 'new-special'}
-                      className="w-full bg-accent text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all disabled:opacity-50"
-                    >
-                      {isProcessing === 'new-special' ? <Loader2 className="animate-spin" /> : <><Plus size={20} /> Dodaj okres</>}
-                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        type="submit"
+                        disabled={isProcessing === 'save-special'}
+                        className="flex-1 bg-accent text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all disabled:opacity-50"
+                      >
+                        {isProcessing === 'save-special' ? <Loader2 className="animate-spin" /> : <><Save size={20} /> {editingSpecialPriceId ? 'Zapisz' : 'Dodaj okres'}</>}
+                      </button>
+                      {editingSpecialPriceId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingSpecialPriceId(null);
+                            setNewSpecialPrice({ houseId: HOUSES[0].id, startDate: '', endDate: '', price: getPriceForHouse(HOUSES[0].id), label: '' });
+                          }}
+                          className="px-6 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all"
+                        >
+                          Anuluj
+                        </button>
+                      )}
+                    </div>
                   </form>
                 </div>
 
@@ -916,7 +940,24 @@ export default function Admin() {
                             <td className="px-6 py-5 font-bold text-accent">
                               {sp.price} zł <span className="text-[10px] text-gray-400 font-normal uppercase ml-1">/ doba</span>
                             </td>
-                            <td className="px-6 py-5 text-right">
+                            <td className="px-6 py-5 text-right whitespace-nowrap">
+                              <button
+                                onClick={() => {
+                                  setEditingSpecialPriceId(sp.id);
+                                  setNewSpecialPrice({
+                                    houseId: sp.houseId,
+                                    startDate: sp.startDate,
+                                    endDate: sp.endDate,
+                                    price: sp.price,
+                                    label: sp.label || ''
+                                  });
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                className="p-2 text-gray-400 hover:text-accent hover:bg-accent/10 rounded-lg transition-all mr-1"
+                                title="Edytuj ofertę specjalną"
+                              >
+                                <Edit2 size={18} />
+                              </button>
                               <button 
                                 onClick={() => handleDeleteSpecialPrice(sp.id)}
                                 disabled={isProcessing === sp.id}
