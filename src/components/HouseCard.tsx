@@ -61,7 +61,7 @@ export default function HouseCard({ house }: { house: House }) {
         if (data.houseId === house.id && data.price) {
           const endDate = parseDateLocal(data.endDate);
           endDate.setHours(23, 59, 59, 999);
-          
+
           if (endDate >= today) {
             newSP.push(data.price);
           }
@@ -100,18 +100,18 @@ export default function HouseCard({ house }: { house: House }) {
             transition={{ duration: 0.5 }}
           />
         </AnimatePresence>
-        
+
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
-        
+
         {/* Navigation Arrows */}
         <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-          <button 
+          <button
             onClick={prevImage}
             className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white hover:text-gray-900 transition-all shadow-lg"
           >
             <ArrowLeft size={24} />
           </button>
-          <button 
+          <button
             onClick={nextImage}
             className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white hover:text-gray-900 transition-all shadow-lg"
           >
@@ -122,8 +122,8 @@ export default function HouseCard({ house }: { house: House }) {
         {/* Indicators */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
           {house.images.map((_, i) => (
-            <div 
-              key={i} 
+            <div
+              key={i}
               className={`h-1.5 rounded-full transition-all ${i === currentImage ? 'w-8 bg-white' : 'w-2 bg-white/50'}`}
             ></div>
           ))}
@@ -162,10 +162,10 @@ export default function HouseCard({ house }: { house: House }) {
           <div>
             <p className="text-sm text-gray-400 uppercase tracking-widest font-semibold mb-1">Cena od</p>
             <p className="text-3xl font-display font-bold text-accent">
-              {houseMinPrice} zł <span className="text-base font-normal text-gray-400">/ doba + prąd</span>
+              {houseMinPrice} zł <span className="text-base font-normal text-gray-400">/ doba</span>
             </p>
           </div>
-          <Link 
+          <Link
             to={`/nasze-domki#${house.id}`}
             className="flex items-center gap-2 bg-accent text-white px-8 py-4 rounded-xl font-bold hover:scale-105 transition-all shadow-xl shadow-accent/20"
           >
