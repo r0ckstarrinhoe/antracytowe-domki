@@ -482,8 +482,8 @@ export default function Admin() {
               {[
                 { label: 'Wszystkie rezerwacje', value: reservations.length, icon: <Calendar fill="currentColor" opacity="0.2" /> },
                 { label: 'Oczekujące', value: reservations.filter(r => !r.isDepositPaid && !r.isFullyPaid && r.status !== 'cancelled').length, icon: <Check />, color: 'text-amber-600' },
-                { label: 'Wpłacona zaliczka', value: reservations.filter(r => r.isDepositPaid && !r.isFullyPaid).length, icon: <Tag />, color: 'text-blue-600' },
-                { label: 'Opłacone/Zakoń.', value: reservations.filter(r => r.isFullyPaid).length, icon: <CheckCircle2 />, color: 'text-emerald-600' },
+                { label: 'Wpłacona zaliczka', value: reservations.filter(r => r.isDepositPaid && !r.isFullyPaid && r.status !== 'cancelled').length, icon: <Tag />, color: 'text-blue-600' },
+                { label: 'Opłacone/Zakoń.', value: reservations.filter(r => r.isFullyPaid && r.status !== 'cancelled').length, icon: <CheckCircle2 />, color: 'text-emerald-600' },
                 { label: 'Anulowane', value: reservations.filter(r => r.status === 'cancelled').length, icon: <X />, color: 'text-rose-500' },
               ].map((stat, i) => (
                 <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/50">
