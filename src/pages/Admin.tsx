@@ -893,15 +893,17 @@ export default function Admin() {
                         value={newSpecialPrice.label}
                         onChange={(e) => setNewSpecialPrice(prev => ({ ...prev, label: e.target.value }))}
                         placeholder="np. Majówka"
-                        className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-                    <button 
+                        className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+
+                    <button 
                       type="submit"
                       disabled={isProcessing === 'new-special'}
                       className="w-full bg-accent text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all disabled:opacity-50"
                     >
                       {isProcessing === 'new-special' ? <Loader2 className="animate-spin" /> : <><Plus size={20} /> Dodaj okres</>}
-                    </button>     </button>
-                      )}
-                    </div>
+                    </button>
                   </form>
                 </div>
 
