@@ -73,8 +73,9 @@ export default function Admin() {
     label: ''
   });
 
-  const [editingPrice, setEditingPrice] = React.useState<{id: string, value: number} | null>(null);
+  const [editingPrice, setEditingPrice] = React.useState<{ id: string, value: number } | null>(null);
   const [editingSpecialPriceId, setEditingSpecialPriceId] = React.useState<string | null>(null);
+  const [editingSpecialPrice, setEditingSpecialPrice] = React.useState<any>(null);
 
   const getPriceForHouse = (houseId: string) => {
     if (houseId === 'all') return Object.values(houseSettings)[0] || HOUSES[0].priceBase || 0;
@@ -104,22 +105,22 @@ export default function Admin() {
 
   const calculateResPrice = (res: Reservation) => {
     if (res.totalPrice && res.totalPrice > 0) return res.totalPrice;
-    
+
     // Fallback calculation logic
     let total = 0;
     const start = parseDateLocal(res.startDate);
     const end = parseDateLocal(res.endDate);
-    
+
     let current = start;
     while (current < end) {
-      const applicableSpecials = specialPrices.filter(sp => 
-        (sp.houseId === res.houseId || sp.houseId === 'all') && 
-        isWithinInterval(current, { 
-          start: parseDateLocal(sp.startDate), 
-          end: parseDateLocal(sp.endDate) 
+      const applicableSpecials = specialPrices.filter(sp =>
+        (sp.houseId === res.houseId || sp.houseId === 'all') &&
+        isWithinInterval(current, {
+          start: parseDateLocal(sp.startDate),
+          end: parseDateLocal(sp.endDate)
         })
       );
-      
+
       if (applicableSpecials.length > 0) {
         // Use the lowest special price if multiple ranges overlap
         const minSpecial = Math.min(...applicableSpecials.map(s => s.price));
@@ -244,9 +245,9 @@ export default function Admin() {
     setIsProcessing(resId);
     try {
       const status = isPaid ? 'deposit_paid' : 'confirmed';
-      await updateDoc(doc(db, 'reservations', resId), { 
+      await updateDoc(doc(db, 'reservations', resId), {
         isDepositPaid: isPaid,
-        status 
+        status
       });
       setReservations(prev => prev.map(r => r.id === resId ? { ...r, isDepositPaid: isPaid, status } : r));
     } catch (error) {
@@ -261,7 +262,7 @@ export default function Admin() {
     const path = `reservations/${resId}`;
     setIsProcessing(resId);
     try {
-      await updateDoc(doc(db, 'reservations', resId), { 
+      await updateDoc(doc(db, 'reservations', resId), {
         isFullyPaid: true,
         isDepositPaid: true,
         status: 'confirmed'
@@ -294,12 +295,12 @@ export default function Admin() {
       const checkExpiry = async () => {
         const now = new Date();
         let changed = false;
-        
+
         for (const res of reservations) {
           if (res.status !== 'cancelled' && !res.isDepositPaid && res.createdAt) {
             const createdDate = res.createdAt.toDate ? res.createdAt.toDate() : new Date(res.createdAt);
             const expiryDate = addDays(createdDate, globalSettings.daysToPayDeposit);
-            
+
             if (now > expiryDate) {
               await handleStatusChange(res.id, 'cancelled');
               changed = true;
@@ -353,25 +354,16 @@ export default function Admin() {
     }
   };
 
-  const handleSaveSpecialPrice = async (e: React.FormEvent) => {
+  const handleAddSpecialPrice = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsProcessing('save-special');
+    const path = 'special_prices';
+    setIsProcessing('new-special');
     try {
-      if (editingSpecialPriceId) {
-        const path = `special_prices/${editingSpecialPriceId}`;
-        await updateDoc(doc(db, 'special_prices', editingSpecialPriceId), {
-          ...newSpecialPrice
-        });
-        setSpecialPrices(prev => prev.map(p => p.id === editingSpecialPriceId ? { ...p, ...newSpecialPrice } as SpecialPrice : p));
-        setEditingSpecialPriceId(null);
-      } else {
-        const path = 'special_prices';
-        const docRef = await addDoc(collection(db, path), {
-          ...newSpecialPrice,
-          createdAt: serverTimestamp()
-        });
-        setSpecialPrices(prev => [...prev, { id: docRef.id, ...newSpecialPrice } as SpecialPrice]);
-      }
+      const docRef = await addDoc(collection(db, path), {
+        ...newSpecialPrice,
+        createdAt: serverTimestamp()
+      });
+      setSpecialPrices(prev => [...prev, { id: docRef.id, ...newSpecialPrice } as SpecialPrice]);
       setNewSpecialPrice({
         houseId: 'all',
         startDate: '',
@@ -381,7 +373,29 @@ export default function Admin() {
       });
     } catch (error) {
       console.error(error);
-      handleFirestoreError(error, editingSpecialPriceId ? OperationType.UPDATE : OperationType.WRITE, 'special_prices');
+      handleFirestoreError(error, OperationType.WRITE, path);
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  const handleUpdateSpecialPrice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSpecialPrice) return;
+    setIsProcessing('save-special');
+    try {
+      await updateDoc(doc(db, 'special_prices', editingSpecialPrice.id), {
+        houseId: editingSpecialPrice.houseId,
+        startDate: editingSpecialPrice.startDate,
+        endDate: editingSpecialPrice.endDate,
+        price: editingSpecialPrice.price,
+        label: editingSpecialPrice.label
+      });
+      setSpecialPrices(prev => prev.map(p => p.id === editingSpecialPrice.id ? { ...p, ...editingSpecialPrice } as SpecialPrice : p));
+      setEditingSpecialPrice(null);
+    } catch (error) {
+      console.error(error);
+      handleFirestoreError(error, OperationType.UPDATE, 'special_prices');
     } finally {
       setIsProcessing(null);
     }
@@ -419,14 +433,14 @@ export default function Admin() {
           <h2 className="text-3xl font-display font-bold mb-4">Panel Admina</h2>
           <p className="text-gray-500 mb-10">Wprowadź hasło, aby uzyskać dostęp.</p>
           <form onSubmit={handleLogin} className="space-y-4">
-            <input 
+            <input
               type="password"
               placeholder="Hasło"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all font-mono"
             />
-            <button 
+            <button
               type="submit"
               className="w-full bg-accent text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all"
             >
@@ -455,7 +469,7 @@ export default function Admin() {
               <p className="text-sm font-bold leading-none">Administrator</p>
               <p className="text-xs text-gray-400">Dostęp zabezpieczony</p>
             </div>
-            <button 
+            <button
               onClick={handleLogout}
               className="ml-4 text-gray-400 hover:text-red-500 transition-colors"
             >
@@ -466,20 +480,18 @@ export default function Admin() {
 
         {/* Tabs */}
         <div className="flex gap-4 mb-8 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-200 w-fit">
-          <button 
+          <button
             onClick={() => setActiveTab('reservations')}
-            className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${
-              activeTab === 'reservations' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-gray-500 hover:bg-gray-50'
-            }`}
+            className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${activeTab === 'reservations' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-gray-500 hover:bg-gray-50'
+              }`}
           >
             <Calendar size={18} />
             Rezerwacje
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('pricing')}
-            className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${
-              activeTab === 'pricing' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-gray-500 hover:bg-gray-50'
-            }`}
+            className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${activeTab === 'pricing' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-gray-500 hover:bg-gray-50'
+              }`}
           >
             <Tag size={18} />
             Cennik
@@ -513,14 +525,14 @@ export default function Admin() {
             <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <h3 className="font-bold text-lg">Ostatnie zgłoszenia</h3>
-                <button 
+                <button
                   onClick={fetchReservations}
                   className="text-primary-600 text-sm font-bold hover:underline"
                 >
                   Odśwież listę
                 </button>
               </div>
-              
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
@@ -560,7 +572,7 @@ export default function Admin() {
                             <div className="flex items-center gap-2 group/price min-w-[120px]">
                               {editingPrice?.id === res.id ? (
                                 <div className="flex items-center gap-1">
-                                  <input 
+                                  <input
                                     type="number"
                                     autoFocus
                                     value={editingPrice.value}
@@ -574,7 +586,7 @@ export default function Admin() {
                                     }}
                                     className="w-20 bg-white border border-gray-200 rounded px-1 font-bold text-accent outline-none focus:ring-1 focus:ring-accent"
                                   />
-                                  <button 
+                                  <button
                                     onClick={() => {
                                       handleUpdatePrice(res.id, editingPrice.value);
                                       setEditingPrice(null);
@@ -589,7 +601,7 @@ export default function Admin() {
                                   <p className="font-bold text-accent">
                                     {(res.totalPrice || calculateResPrice(res)).toLocaleString()} zł
                                   </p>
-                                  <button 
+                                  <button
                                     onClick={() => setEditingPrice({ id: res.id, value: res.totalPrice || calculateResPrice(res) })}
                                     className="text-gray-300 hover:text-accent opacity-0 group-hover/price:opacity-100 transition-opacity"
                                   >
@@ -606,25 +618,24 @@ export default function Admin() {
                               </div>
                             )}
                           </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border-2 ${
-                          res.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                          res.isFullyPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                          res.isDepositPaid ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                          'bg-amber-50 text-amber-600 border-amber-100'
-                        }`}>
-                          {res.status === 'cancelled' ? 'Anulowane' :
-                          res.isFullyPaid ? 'Wpłacono całość' : 
-                          res.isDepositPaid ? 'Wpłacono zaliczkę' : 
-                          'Oczekujące'}
-                        </span>
-                      </td>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border-2 ${res.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                              res.isFullyPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                res.isDepositPaid ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                  'bg-amber-50 text-amber-600 border-amber-100'
+                            }`}>
+                            {res.status === 'cancelled' ? 'Anulowane' :
+                              res.isFullyPaid ? 'Wpłacono całość' :
+                                res.isDepositPaid ? 'Wpłacono zaliczkę' :
+                                  'Oczekujące'}
+                          </span>
+                        </td>
                         <td className="px-6 py-5 text-right">
                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             {res.status !== 'cancelled' && (
                               <>
-                                <button 
+                                <button
                                   disabled={isProcessing === res.id}
                                   onClick={() => handleToggleDeposit(res.id, !res.isDepositPaid)}
                                   className={`p-2 rounded-lg transition-all ${res.isDepositPaid ? 'bg-accent text-white' : 'bg-accent/5 text-accent hover:bg-accent/10'}`}
@@ -632,7 +643,7 @@ export default function Admin() {
                                 >
                                   <Tag size={18} />
                                 </button>
-                                <button 
+                                <button
                                   disabled={isProcessing === res.id}
                                   onClick={() => handleMarkFullyPaid(res.id)}
                                   className={`p-2 rounded-lg transition-all ${res.isFullyPaid ? 'bg-green-500 text-white' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
@@ -640,7 +651,7 @@ export default function Admin() {
                                 >
                                   <Check size={18} />
                                 </button>
-                                <button 
+                                <button
                                   disabled={isProcessing === res.id}
                                   onClick={() => handleStatusChange(res.id, 'cancelled')}
                                   className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all font-bold"
@@ -651,7 +662,7 @@ export default function Admin() {
                               </>
                             )}
                             {res.status === 'cancelled' && (
-                              <button 
+                              <button
                                 disabled={isProcessing === res.id}
                                 onClick={() => handleDelete(res.id)}
                                 className="p-2 text-red-100 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
@@ -693,13 +704,13 @@ export default function Admin() {
                       <div className="space-y-3">
                         <label className="text-sm font-bold text-gray-500">Typ zaliczki</label>
                         <div className="flex bg-gray-100 p-1 rounded-xl">
-                          <button 
+                          <button
                             onClick={() => setLocalGS({ ...localGS, depositType: 'percent' })}
                             className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${localGS.depositType === 'percent' ? 'bg-white shadow-sm' : 'text-gray-400'}`}
                           >
                             Procent (%)
                           </button>
-                          <button 
+                          <button
                             onClick={() => setLocalGS({ ...localGS, depositType: 'fixed' })}
                             className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${localGS.depositType === 'fixed' ? 'bg-white shadow-sm' : 'text-gray-400'}`}
                           >
@@ -714,7 +725,7 @@ export default function Admin() {
                           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">
                             {localGS.depositType === 'percent' ? '%' : 'PLN'}
                           </span>
-                          <input 
+                          <input
                             type="number"
                             value={localGS.depositValue}
                             onChange={(e) => setLocalGS({ ...localGS, depositValue: Number(e.target.value) })}
@@ -727,7 +738,7 @@ export default function Admin() {
                         <label className="text-sm font-bold text-gray-500">Dni na wpłatę (anulowanie)</label>
                         <div className="relative">
                           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold uppercase text-[10px]">Dni</span>
-                          <input 
+                          <input
                             type="number"
                             value={localGS.daysToPayDeposit}
                             onChange={(e) => setLocalGS({ ...localGS, daysToPayDeposit: Number(e.target.value) })}
@@ -751,7 +762,7 @@ export default function Admin() {
                           </div>
                         )}
                       </div>
-                      <button 
+                      <button
                         onClick={() => handleUpdateGlobalSettings(localGS)}
                         disabled={isProcessing === 'global-settings' || JSON.stringify(localGS) === JSON.stringify(globalSettings)}
                         className="bg-accent text-white px-8 py-3 rounded-xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-accent/20 disabled:opacity-50 disabled:scale-100 disabled:shadow-none"
@@ -779,14 +790,14 @@ export default function Admin() {
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">PLN</span>
-                        <input 
+                        <input
                           type="number"
                           value={houseSettings[house.id] || house.priceBase}
                           onChange={(e) => setHouseSettings(prev => ({ ...prev, [house.id]: Number(e.target.value) }))}
                           className="w-full pl-11 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
                         />
                       </div>
-                      <button 
+                      <button
                         disabled={isProcessing === `base-${house.id}`}
                         onClick={() => handleUpdateBasePrice(house.id, houseSettings[house.id] || house.priceBase)}
                         className="bg-accent text-white px-4 py-2 rounded-lg font-bold hover:scale-105 transition-all text-sm disabled:opacity-50"
@@ -813,26 +824,26 @@ export default function Admin() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                 {/* Form */}
                 <div className="lg:col-span-1">
-                  <form onSubmit={handleSaveSpecialPrice} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-200 space-y-6">
+                  <form onSubmit={handleAddSpecialPrice} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-200 space-y-6">
                     <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
-                      {editingSpecialPriceId ? <Edit2 size={20} /> : <Plus size={20} />} {editingSpecialPriceId ? 'Edytuj cenę' : 'Dodaj nową cenę'}
+                      <Plus size={20} /> Dodaj nową cenę
                     </h4>
-                    
+
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-gray-500">Domek</label>
-                      <select 
+                      <select
                         value={newSpecialPrice.houseId}
                         onChange={(e) => {
                           const houseId = e.target.value;
-                          setNewSpecialPrice(prev => ({ 
-                            ...prev, 
+                          setNewSpecialPrice(prev => ({
+                            ...prev,
                             houseId,
                             price: getPriceForHouse(houseId)
                           }));
                         }}
                         className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
                       >
-                        <option value="all">Wszystkie domki</option>
+                        <option value="all">Wszystkie</option>
                         {HOUSES.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
                       </select>
                     </div>
@@ -840,7 +851,7 @@ export default function Admin() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-gray-500">Od</label>
-                        <input 
+                        <input
                           type="date"
                           value={newSpecialPrice.startDate}
                           onChange={(e) => setNewSpecialPrice(prev => ({ ...prev, startDate: e.target.value }))}
@@ -850,7 +861,7 @@ export default function Admin() {
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-gray-500">Do</label>
-                        <input 
+                        <input
                           type="date"
                           value={newSpecialPrice.endDate}
                           onChange={(e) => setNewSpecialPrice(prev => ({ ...prev, endDate: e.target.value }))}
@@ -864,7 +875,7 @@ export default function Admin() {
                       <label className="text-sm font-bold text-gray-500">Cena za dobę</label>
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">PLN</span>
-                        <input 
+                        <input
                           type="number"
                           value={newSpecialPrice.price}
                           onChange={(e) => setNewSpecialPrice(prev => ({ ...prev, price: Number(e.target.value) }))}
@@ -877,34 +888,18 @@ export default function Admin() {
 
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-gray-500">Etykieta (opcjonalnie)</label>
-                      <input 
+                      <input
                         type="text"
                         value={newSpecialPrice.label}
                         onChange={(e) => setNewSpecialPrice(prev => ({ ...prev, label: e.target.value }))}
                         placeholder="np. Majówka"
-                        className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button 
-                        type="submit"
-                        disabled={isProcessing === 'save-special'}
-                        className="flex-1 bg-accent text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all disabled:opacity-50"
-                      >
-                        {isProcessing === 'save-special' ? <Loader2 className="animate-spin" /> : <><Save size={20} /> {editingSpecialPriceId ? 'Zapisz' : 'Dodaj okres'}</>}
-                      </button>
-                      {editingSpecialPriceId && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingSpecialPriceId(null);
-                            setNewSpecialPrice({ houseId: 'all', startDate: '', endDate: '', price: getPriceForHouse('all'), label: '' });
-                          }}
-                          className="px-6 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all"
-                        >
-                          Anuluj
-                        </button>
+                        className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-                    <button 
+                      type="submit"
+                      disabled={isProcessing === 'new-special'}
+                      className="w-full bg-accent text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all disabled:opacity-50"
+                    >
+                      {isProcessing === 'new-special' ? <Loader2 className="animate-spin" /> : <><Plus size={20} /> Dodaj okres</>}
+                    </button>     </button>
                       )}
                     </div>
                   </form>
@@ -927,7 +922,7 @@ export default function Admin() {
                         {specialPrices.map((sp) => (
                           <tr key={sp.id} className="hover:bg-gray-50 transition-colors group">
                             <td className="px-6 py-5 font-bold">
-                              {sp.houseId === 'all' ? 'Wszystkie domki' : HOUSES.find(h => h.id === sp.houseId)?.name}
+                              {sp.houseId === 'all' ? 'Wszystkie' : HOUSES.find(h => h.id === sp.houseId)?.name}
                             </td>
                             <td className="px-6 py-5">
                               {sp.label ? (
@@ -944,23 +939,13 @@ export default function Admin() {
                             </td>
                             <td className="px-6 py-5 text-right whitespace-nowrap">
                               <button
-                                onClick={() => {
-                                  setEditingSpecialPriceId(sp.id);
-                                  setNewSpecialPrice({
-                                    houseId: sp.houseId,
-                                    startDate: sp.startDate,
-                                    endDate: sp.endDate,
-                                    price: sp.price,
-                                    label: sp.label || ''
-                                  });
-                                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
+                                onClick={() => setEditingSpecialPrice(sp)}
                                 className="p-2 text-gray-400 hover:text-accent hover:bg-accent/10 rounded-lg transition-all mr-1"
                                 title="Edytuj ofertę specjalną"
                               >
                                 <Edit2 size={18} />
                               </button>
-                              <button 
+                              <button
                                 onClick={() => handleDeleteSpecialPrice(sp.id)}
                                 disabled={isProcessing === sp.id}
                                 className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
@@ -987,6 +972,92 @@ export default function Admin() {
           </div>
         )}
       </div>
+      {/* Edit Special Price Modal */}
+      {editingSpecialPrice && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h4 className="font-bold text-lg flex items-center gap-2">
+                <Edit2 size={20} /> Edytuj cenę specjalną
+              </h4>
+              <button 
+                onClick={() => setEditingSpecialPrice(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateSpecialPrice} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-500">Domek</label>
+                <select 
+                  value={editingSpecialPrice.houseId}
+                  onChange={(e) => setEditingSpecialPrice({ ...editingSpecialPrice, houseId: e.target.value })}
+                  className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="all">Wszystkie domki</option>
+                  {HOUSES.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-500">Od</label>
+                  <input 
+                    type="date"
+                    value={editingSpecialPrice.startDate}
+                    onChange={(e) => setEditingSpecialPrice({ ...editingSpecialPrice, startDate: e.target.value })}
+                    className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-500">Do</label>
+                  <input 
+                    type="date"
+                    value={editingSpecialPrice.endDate}
+                    onChange={(e) => setEditingSpecialPrice({ ...editingSpecialPrice, endDate: e.target.value })}
+                    className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-500">Cena za dobę (PLN)</label>
+                <input 
+                  type="number"
+                  value={editingSpecialPrice.price}
+                  onChange={(e) => setEditingSpecialPrice({ ...editingSpecialPrice, price: Number(e.target.value) })}
+                  className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-500">Etykieta (opcjonalnie)</label>
+                <input 
+                  type="text"
+                  value={editingSpecialPrice.label || ''}
+                  onChange={(e) => setEditingSpecialPrice({ ...editingSpecialPrice, label: e.target.value })}
+                  className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div className="pt-4 flex gap-2">
+                <button 
+                  type="submit"
+                  disabled={isProcessing === 'save-special'}
+                  className="flex-1 bg-accent text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-all disabled:opacity-50"
+                >
+                  {isProcessing === 'save-special' ? <Loader2 className="animate-spin" /> : <><Save size={18} /> Zapisz zmiany</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
