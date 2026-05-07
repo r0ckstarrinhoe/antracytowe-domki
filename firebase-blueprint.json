@@ -1,0 +1,123 @@
+{
+  "entities": {
+    "House": {
+      "title": "House",
+      "description": "Represents one of the three vacation houses.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "capacity": { "type": "number" },
+        "amenities": { "type": "array", "items": { "type": "string" } },
+        "priceBase": { "type": "number" },
+        "images": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "name", "priceBase"]
+    },
+    "Reservation": {
+      "title": "Reservation",
+      "description": "Represents a booking made by a customer.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "houseId": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "customerName": { "type": "string" },
+        "customerEmail": { "type": "string", "format": "email" },
+        "customerPhone": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "rejected"] },
+        "totalPrice": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["houseId", "startDate", "endDate", "customerName", "customerEmail", "status"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Represents an administrator with access to the dashboard.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "BlockedDate": {
+      "title": "BlockedDate",
+      "description": "Dates manually blocked by the admin.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "houseId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "reason": { "type": "string" }
+      },
+      "required": ["houseId", "date"]
+    },
+    "SpecialPrice": {
+      "title": "SpecialPrice",
+      "description": "Custom price for specific dates.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "houseId": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "price": { "type": "number" },
+        "label": { "type": "string" }
+      },
+      "required": ["houseId", "startDate", "endDate", "price"]
+    },
+    "HouseSettings": {
+      "title": "HouseSettings",
+      "description": "Configuration settings for a house.",
+      "type": "object",
+      "properties": {
+        "basePrice": { "type": "number" }
+      },
+      "required": ["basePrice"]
+    },
+    "GlobalSettings": {
+      "title": "GlobalSettings",
+      "description": "System-wide booking and deposit settings.",
+      "type": "object",
+      "properties": {
+        "depositType": { "type": "string", "enum": ["fixed", "percent"] },
+        "depositValue": { "type": "number" },
+        "daysToPayDeposit": { "type": "number" }
+      },
+      "required": ["depositType", "depositValue", "daysToPayDeposit"]
+    }
+  },
+  "firestore": {
+    "houses": {
+      "schema": "House",
+      "description": "Collection of vacation houses."
+    },
+    "reservations": {
+      "schema": "Reservation",
+      "description": "Collection of all bookings."
+    },
+    "admins": {
+      "schema": "Admin",
+      "description": "Collection of administrator UIDs."
+    },
+    "blocked_dates": {
+      "schema": "BlockedDate",
+      "description": "Dates that are unavailable for booking."
+    },
+    "special_prices": {
+      "schema": "SpecialPrice",
+      "description": "Custom pricing rules."
+    },
+    "house_settings": {
+      "schema": "HouseSettings",
+      "description": "Dynamic house configurations."
+    },
+    "global_settings": {
+      "schema": "GlobalSettings",
+      "description": "Global app configurations."
+    }
+  }
+}
