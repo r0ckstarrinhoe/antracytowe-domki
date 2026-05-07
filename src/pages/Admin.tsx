@@ -66,7 +66,7 @@ export default function Admin() {
 
   // Form states for new special price
   const [newSpecialPrice, setNewSpecialPrice] = React.useState({
-    houseId: HOUSES[0].id,
+    houseId: 'all',
     startDate: '',
     endDate: '',
     price: 0,
@@ -77,6 +77,7 @@ export default function Admin() {
   const [editingSpecialPriceId, setEditingSpecialPriceId] = React.useState<string | null>(null);
 
   const getPriceForHouse = (houseId: string) => {
+    if (houseId === 'all') return Object.values(houseSettings)[0] || HOUSES[0].priceBase || 0;
     return houseSettings[houseId] || HOUSES.find(h => h.id === houseId)?.priceBase || 0;
   };
 
@@ -112,7 +113,7 @@ export default function Admin() {
     let current = start;
     while (current < end) {
       const applicableSpecials = specialPrices.filter(sp => 
-        sp.houseId === res.houseId && 
+        (sp.houseId === res.houseId || sp.houseId === 'all') && 
         isWithinInterval(current, { 
           start: parseDateLocal(sp.startDate), 
           end: parseDateLocal(sp.endDate) 
@@ -372,10 +373,10 @@ export default function Admin() {
         setSpecialPrices(prev => [...prev, { id: docRef.id, ...newSpecialPrice } as SpecialPrice]);
       }
       setNewSpecialPrice({
-        houseId: HOUSES[0].id,
+        houseId: 'all',
         startDate: '',
         endDate: '',
-        price: getPriceForHouse(HOUSES[0].id),
+        price: getPriceForHouse('all'),
         label: ''
       });
     } catch (error) {
@@ -831,6 +832,7 @@ export default function Admin() {
                         }}
                         className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
                       >
+                        <option value="all">Wszystkie domki</option>
                         {HOUSES.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
                       </select>
                     </div>
@@ -897,7 +899,7 @@ export default function Admin() {
                           type="button"
                           onClick={() => {
                             setEditingSpecialPriceId(null);
-                            setNewSpecialPrice({ houseId: HOUSES[0].id, startDate: '', endDate: '', price: getPriceForHouse(HOUSES[0].id), label: '' });
+                            setNewSpecialPrice({ houseId: 'all', startDate: '', endDate: '', price: getPriceForHouse('all'), label: '' });
                           }}
                           className="px-6 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all"
                         >
@@ -925,7 +927,7 @@ export default function Admin() {
                         {specialPrices.map((sp) => (
                           <tr key={sp.id} className="hover:bg-gray-50 transition-colors group">
                             <td className="px-6 py-5 font-bold">
-                              {HOUSES.find(h => h.id === sp.houseId)?.name}
+                              {sp.houseId === 'all' ? 'Wszystkie domki' : HOUSES.find(h => h.id === sp.houseId)?.name}
                             </td>
                             <td className="px-6 py-5">
                               {sp.label ? (

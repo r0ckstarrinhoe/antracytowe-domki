@@ -151,7 +151,7 @@ export default function BookingSection({ initialHouseId }: BookingSectionProps) 
     // Calculate per night
     while (isBefore(current, end)) {
       const applicableSpecials = specialPrices.filter(sp => 
-        sp.houseId === selectedHouseId && 
+        (sp.houseId === selectedHouseId || sp.houseId === 'all') && 
         isWithinInterval(current, { 
           start: parseDateLocal(sp.startDate), 
           end: parseDateLocal(sp.endDate) 
