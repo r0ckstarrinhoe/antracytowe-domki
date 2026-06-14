@@ -22,9 +22,11 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
   body {
     @apply font-sans text-gray-900 bg-gray-50;
+    overflow-x: hidden;
   }
   button, 
   [role="button"],
