@@ -447,6 +447,12 @@ export default function Admin() {
               Zaloguj się
             </button>
           </form>
+          <a
+            href="/"
+            className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-accent transition-colors"
+          >
+            ← Wróć do strony głównej
+          </a>
         </div>
       </div>
     );
