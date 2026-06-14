@@ -55,24 +55,16 @@ export default function Hero() {
   }, []);
 
   return (
-    <section id="start" className="relative h-[90vh] min-h-[700px] flex items-center overflow-hidden bg-white">
+    <section id="start" className="relative h-screen flex items-center overflow-hidden bg-white">
       {/* Background/Image Layer */}
       <div className="absolute inset-0 z-0">
         <img 
           src="https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&q=80&w=2000" 
           alt="Nowoczesny domek antracytowy" 
-          className="w-full h-full object-cover lg:w-[65%] lg:ml-auto"
+          className="w-full h-full object-cover"
         />
-        {/* Curved White Overlay - Desktop */}
-        <motion.div 
-          initial={{ x: -100, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 1, ease: 'easeOut' }}
-          className="absolute inset-y-0 left-0 bg-white z-10 lg:w-[70%] rounded-r-[600px] hidden lg:block shadow-[100px_0_120px_rgba(0,0,0,0.1)]"
-        ></motion.div>
-        
-        {/* Mobile Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/90 to-white/40 lg:hidden z-10"></div>
+        {/* Soft Dark Overlay */}
+        <div className="absolute inset-0 bg-black/45 z-10"></div>
       </div>
 
       <div className="container mx-auto px-4 relative z-20">
@@ -82,16 +74,16 @@ export default function Hero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="max-w-2xl"
         >
-          <div className="flex items-center gap-2 mb-6 bg-primary-50 border border-primary-100 w-fit px-4 py-1.5 rounded-full text-primary-700 text-sm font-semibold">
-            <Star size={16} className="text-yellow-500 fill-yellow-500" />
+          <div className="flex items-center gap-2 mb-6 bg-white/10 backdrop-blur-sm border border-white/20 w-fit px-4 py-1.5 rounded-full text-white text-sm font-semibold">
+            <Star size={16} className="text-yellow-400 fill-yellow-400" />
             <span>Najwyżej oceniane domki nad Zalewem</span>
           </div>
 
-          <h2 className="text-5xl md:text-8xl font-display font-bold text-gray-900 mb-8 leading-[1.1] tracking-tight">
-            Twój azyl <br/>w sercu <span className="text-primary-600">lasu</span>
+          <h2 className="text-5xl md:text-8xl font-display font-bold text-white mb-8 leading-[1.1] tracking-tight">
+            Twój azyl <br/>w sercu <span className="text-primary-400">lasu</span>
           </h2>
           
-          <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-xl leading-relaxed">
+          <p className="text-xl md:text-2xl text-gray-200 mb-12 max-w-xl leading-relaxed">
             Nowoczesne domki z prywatną balią i jacuzzi. 5 minut spacerem do plaży, 100% prywatności i natury.
           </p>
 
@@ -109,9 +101,9 @@ export default function Hero() {
                 href="https://maps.app.goo.gl/MyRwj3eRNfVi2Lzs9" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 text-gray-700 hover:text-primary-600 transition-colors group"
+                className="flex items-center gap-3 text-white/90 hover:text-white transition-colors group"
               >
-                <MapPin size={20} className="text-primary-600 group-hover:scale-110 transition-transform" />
+                <MapPin size={20} className="text-primary-400 group-hover:scale-110 transition-transform" />
                 <span className="font-bold border-b border-transparent group-hover:border-primary-600">Życiny 208B, 26-035 Raków</span>
               </a>
             </div>

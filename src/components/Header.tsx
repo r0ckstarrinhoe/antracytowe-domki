@@ -8,6 +8,9 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const isHeroActive = location.pathname === '/' && !isScrolled;
+  const isMobileToggleWhite = isHeroActive && !isMobileMenuOpen;
+
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -74,10 +77,10 @@ export default function Header() {
             <Home className="text-white" size={20} />
           </div>
           <div>
-            <h1 className="font-display font-bold leading-none text-accent text-lg tracking-tight">
+            <h1 className={`font-display font-bold leading-none text-lg tracking-tight transition-colors duration-500 ${isHeroActive ? 'text-white' : 'text-accent'}`}>
               Antracytowe Domki
             </h1>
-            <p className="text-[9px] uppercase font-bold tracking-[0.3em] text-primary-600/70 mt-1">
+            <p className={`text-[9px] uppercase font-bold tracking-[0.3em] mt-1 transition-colors duration-500 ${isHeroActive ? 'text-white/70' : 'text-primary-600/70'}`}>
               NAD ZALEWEM CHAŃCZA
             </p>
           </div>
@@ -90,20 +93,20 @@ export default function Header() {
               <Link 
                 key={link.path}
                 to={link.path}
-                className="px-4 py-2 text-gray-500 hover:text-accent transition-all relative group/link"
+                className={`px-4 py-2 transition-all relative group/link ${isHeroActive ? 'text-white/80 hover:text-white' : 'text-gray-500 hover:text-accent'}`}
               >
                 {link.name}
-                <span className="absolute bottom-1 left-4 right-4 h-px bg-accent scale-x-0 group-hover/link:scale-x-100 transition-transform origin-left" />
+                <span className={`absolute bottom-1 left-4 right-4 h-px scale-x-0 group-hover/link:scale-x-100 transition-transform origin-left ${isHeroActive ? 'bg-white' : 'bg-accent'}`} />
               </Link>
             ) : (
               <a 
                 key={link.id}
                 href={`#${link.id}`} 
                 onClick={(e) => handleNavClick(e, link.id!)}
-                className="px-4 py-2 text-gray-500 hover:text-accent transition-all relative group/link"
+                className={`px-4 py-2 transition-all relative group/link ${isHeroActive ? 'text-white/80 hover:text-white' : 'text-gray-500 hover:text-accent'}`}
               >
                 {link.name}
-                <span className="absolute bottom-1 left-4 right-4 h-px bg-accent scale-x-0 group-hover/link:scale-x-100 transition-transform origin-left" />
+                <span className={`absolute bottom-1 left-4 right-4 h-px scale-x-0 group-hover/link:scale-x-100 transition-transform origin-left ${isHeroActive ? 'bg-white' : 'bg-accent'}`} />
               </a>
             )
           ))}
@@ -112,7 +115,11 @@ export default function Header() {
         <div className="flex items-center gap-6">
           <Link 
             to="/rezerwacja" 
-            className="hidden sm:flex bg-accent text-white px-8 py-3 rounded-2xl font-display font-bold text-sm transition-all shadow-xl shadow-accent/10 hover:shadow-accent/20 hover:-translate-y-0.5 active:translate-y-0 items-center gap-2"
+            className={`hidden sm:flex px-8 py-3 rounded-2xl font-display font-bold text-sm transition-all items-center gap-2 ${
+              isHeroActive 
+                ? 'bg-white text-accent hover:bg-white/90 shadow-xl shadow-white/5 hover:-translate-y-0.5 active:translate-y-0' 
+                : 'bg-accent text-white shadow-xl shadow-accent/10 hover:shadow-accent/20 hover:-translate-y-0.5 active:translate-y-0'
+            }`}
           >
             <span>Rezerwacja</span>
           </Link>
@@ -120,7 +127,11 @@ export default function Header() {
           {/* Mobile Toggle */}
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-accent hover:bg-gray-100 transition-colors z-50"
+            className={`lg:hidden w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 z-50 ${
+              isMobileToggleWhite 
+                ? 'bg-white/10 text-white backdrop-blur-sm border border-white/15' 
+                : 'bg-gray-50 text-accent hover:bg-gray-100'
+            }`}
           >
             {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
